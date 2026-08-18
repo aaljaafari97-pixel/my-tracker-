@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17365D">
+<title>My Money Tracker</title>
+<style>
+:root{
+  --navy:#17365D; --blue:#5B9BD5; --green:#70AD47; --orange:#ED7D31;
+  --bg:#F5F7FA; --card:#FFFFFF; --text:#263238; --muted:#718096;
+  --border:#E2E8F0; --danger:#C0392B;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+.app{max-width:520px;margin:auto;padding:18px 14px 100px}
+header{background:linear-gradient(135deg,var(--navy),#285A8F);color:#fff;border-radius:22px;padding:20px;margin-bottom:14px;box-shadow:0 8px 24px rgba(23,54,93,.16)}
+h1{margin:0;font-size:24px}.sub{opacity:.82;font-size:13px;margin-top:4px}
+.date{margin-top:16px;font-size:14px}
+.balance-card{background:#fff;border-radius:20px;padding:20px;margin-bottom:12px;box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.balance-label{color:var(--muted);font-size:13px}.balance{font-size:38px;font-weight:800;margin:3px 0 16px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:var(--bg);padding:12px;border-radius:14px}.stat b{display:block;font-size:19px;margin-top:3px}
+.section{margin:18px 2px 8px;font-weight:800;font-size:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px;padding:14px}
+.card small{color:var(--muted)}.card strong{display:block;font-size:19px;margin-top:5px}
+button{border:0;border-radius:14px;padding:13px 15px;font-weight:700;font-size:14px;cursor:pointer}
+.add{width:100%;background:var(--navy);color:white;font-size:16px;padding:16px;margin:6px 0}
+.category{display:flex;align-items:center;justify-content:space-between}
+.icon{font-size:24px}
+.transaction{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.transaction:last-child{border-bottom:0}.txleft{min-width:0}.txdesc{font-weight:700}.txmeta{font-size:12px;color:var(--muted);margin-top:3px}.txamt{font-weight:800;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:25px 10px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:10;align-items:flex-end;justify-content:center}
+.modal{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px 16px 28px;max-height:90vh;overflow:auto}
+.modal h2{margin:0 0 15px}.row{margin-bottom:12px}.row label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select{width:100%;padding:14px;border:1px solid var(--border);border-radius:13px;font-size:16px;background:#fff}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.cancel{background:var(--bg)}.save{background:var(--navy);color:#fff}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:center;z-index:5}
+.tabbar{width:100%;max-width:520px;display:grid;grid-template-columns:1fr 1fr 1fr}
+.tab{background:#fff;color:var(--muted);border-radius:0;padding:12px 5px;font-size:12px}.tab.active{color:var(--navy);font-weight:800}
+.page{display:none}.page.active{display:block}
+.month-select{display:flex;gap:8px;align-items:center}.month-select select{flex:1}
+.delete{background:none;color:var(--danger);padding:5px;font-size:12px}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#17365D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Money Tracker">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>💰 My Money Tracker</h1>
+    <div class="sub">Simple. Fast. No spreadsheet.</div>
+    <div class="date" id="todayText"></div>
+  </header>
+
+  <main id="home" class="page active">
+    <div class="balance-card">
+      <div class="balance-label">Today's money left</div>
+      <div class="balance" id="todayLeft">100 SAR</div>
+      <div class="stats">
+        <div class="stat"><small>Daily allowance</small><b>100 SAR</b></div>
+        <div class="stat"><small>Spent today</small><b id="todaySpent">0 SAR</b></div>
+      </div>
+    </div>
+
+    <button class="add" onclick="openModal()">＋ Add expense</button>
+
+    <div class="section">📊 September</div>
+    <div class="grid">
+      <div class="card"><small>Income</small><strong id="income">0 SAR</strong></div>
+      <div class="card"><small>Total spent</small><strong id="totalSpent">0 SAR</strong></div>
+      <div class="card"><small>Rent</small><strong id="rent">0 SAR</strong></div>
+      <div class="card"><small>Travel</small><strong id="travel">0 SAR</strong></div>
+      <div class="card"><small>Investment</small><strong id="investment">0 SAR</strong></div>
+      <div class="card"><small>Car repair</small><strong id="car">0 SAR</strong></div>
+    </div>
+
+    <div class="section">💳 Recent transactions</div>
+    <div class="card" id="recent"></div>
+  </main>
+
+  <main id="monthly" class="page">
+    <div class="section">📅 Monthly plan</div>
+    <div class="month-select">
+      <select id="month"></select>
+      <button onclick="setIncome()">Set income</button>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="category"><span>💰 Income</span><strong id="mIncome">0 SAR</strong></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+      <div class="category"><span>🏠 Rent</span><strong id="mRent">0 SAR</strong></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+      <div class="category"><span>✈️ Travel</span><strong id="mTravel">0 SAR</strong></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+      <div class="category"><span>📈 Investment</span><strong id="mInvestment">0 SAR</strong></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+      <div class="category"><span>🚗 Car repair</span><strong id="mCar">0 SAR</strong></div>
+    </div>
+    <div class="card" style="margin-top:10px;background:var(--light-blue)">
+      <small>Money left after monthly expenses</small>
+      <strong id="monthlyLeft">0 SAR</strong>
+    </div>
+  </main>
+
+  <main id="history" class="page">
+    <div class="section">🧾 All transactions</div>
+    <div class="card" id="allTransactions"></div>
+  </main>
+</div>
+
+<div class="tabs">
+  <div class="tabbar">
+    <button class="tab active" onclick="showPage('home',this)">🏠 Home</button>
+    <button class="tab" onclick="showPage('monthly',this)">📊 Monthly</button>
+    <button class="tab" onclick="showPage('history',this)">🧾 History</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>＋ Add expense</h2>
+    <div class="row">
+      <label>What is this for?</label>
+      <select id="category" onchange="categoryChanged()">
+        <option value="Daily">🟢 Daily</option>
+        <option value="Rent">🏠 Rent</option>
+        <option value="Travel">✈️ Travel</option>
+        <option value="Investment">📈 Investment</option>
+        <option value="Car Repair">🚗 Car Repair</option>
+      </select>
+    </div>
+    <div class="row">
+      <label id="dateLabel">Date</label>
+      <input id="txDate" type="date">
+    </div>
+    <div class="row">
+      <label>Amount (SAR)</label>
+      <input id="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="row">
+      <label>Description</label>
+      <input id="description" type="text" placeholder="e.g. Lunch, coffee, rent...">
+    </div>
+    <div class="note" id="categoryNote">Daily expenses reduce that day's 100 SAR allowance.</div>
+    <div class="actions">
+      <button class="cancel" onclick="closeModal()">Cancel</button>
+      <button class="save" onclick="saveExpense()">Save expense</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY="myMoneyTrackerV1";
+const DAILY=100;
+let data=JSON.parse(localStorage.getItem(KEY)||'{"transactions":[],"income":{}}');
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function money(n){return new Intl.NumberFormat('en-SA',{maximumFractionDigits:2}).format(n||0)+" SAR";}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function monthKey(d){return d.slice(0,7);}
+function currentMonth(){return document.getElementById('month').value||'2026-09';}
+
+function init(){
+  const m=document.getElementById('month');
+  for(let y=2026;y<=2027;y++) for(let mo=1;mo<=12;mo++){
+    const v=`${y}-${String(mo).padStart(2,'0')}`;
+    const o=document.createElement('option'); o.value=v;
+    o.textContent=new Date(y,mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    m.appendChild(o);
+  }
+  m.value='2026-09';
+  document.getElementById('txDate').value=todayISO();
+  document.getElementById('todayText').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  render();
+}
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active'); render();
+}
+function openModal(){
+  document.getElementById('modalBg').style.display='flex';
+  document.getElementById('txDate').value=todayISO();
+  document.getElementById('category').value='Daily';
+  categoryChanged();
+  setTimeout(()=>document.getElementById('amount').focus(),200);
+}
+function closeModal(){document.getElementById('modalBg').style.display='none';}
+function categoryChanged(){
+  const cat=document.getElementById('category').value;
+  const note=document.getElementById('categoryNote');
+  if(cat==='Daily'){
+    note.textContent="Daily expense: it reduces today's 100 SAR allowance.";
+    document.getElementById('dateLabel').textContent="Date";
+  }else{
+    note.textContent=`${cat}: monthly expense. It does NOT reduce the daily 100 SAR allowance.`;
+    document.getElementById('dateLabel').textContent="Date";
+  }
+}
+function saveExpense(){
+  const cat=document.getElementById('category').value;
+  const d=document.getElementById('txDate').value||todayISO();
+  const amount=parseFloat(document.getElementById('amount').value);
+  const desc=document.getElementById('description').value.trim()||cat;
+  if(!amount||amount<0){alert("Please enter an amount.");return;}
+  data.transactions.push({id:Date.now(),date:d,category:cat,amount,description:desc});
+  save(); closeModal(); render();
+}
+function setIncome(){
+  const m=currentMonth();
+  const current=data.income[m]||0;
+  const val=prompt("Monthly income for "+m+" (SAR):",current);
+  if(val===null)return;
+  const n=parseFloat(val);
+  if(isNaN(n)||n<0)return;
+  data.income[m]=n; save(); render();
+}
+function monthTotals(m){
+  const tx=data.transactions.filter(t=>monthKey(t.date)===m);
+  const total=tx.reduce((s,t)=>s+t.amount,0);
+  const cats={Rent:0,Travel:0,Investment:0,"Car Repair":0,Daily:0};
+  tx.forEach(t=>cats[t.category]=(cats[t.category]||0)+t.amount);
+  return {tx,total,cats,income:data.income[m]||0};
+}
+function render(){
+  const today=todayISO();
+  const todaySpent=data.transactions.filter(t=>t.date===today&&t.category==='Daily').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('todaySpent').textContent=money(todaySpent);
+  document.getElementById('todayLeft').textContent=money(DAILY-todaySpent);
+
+  const m='2026-09', x=monthTotals(m);
+  document.getElementById('income').textContent=money(x.income);
+  document.getElementById('totalSpent').textContent=money(x.total);
+  document.getElementById('rent').textContent=money(x.cats.Rent);
+  document.getElementById('travel').textContent=money(x.cats.Travel);
+  document.getElementById('investment').textContent=money(x.cats.Investment);
+  document.getElementById('car').textContent=money(x.cats["Car Repair"]);
+
+  const recent=[...data.transactions].sort((a,b)=>b.id-a.id).slice(0,8);
+  document.getElementById('recent').innerHTML=recent.length?recent.map(txHTML).join(''):'<div class="empty">No expenses yet.<br>Tap <b>＋ Add expense</b> when you spend.</div>';
+
+  const sel=document.getElementById('month').value||m, y=monthTotals(sel);
+  document.getElementById('mIncome').textContent=money(y.income);
+  document.getElementById('mRent').textContent=money(y.cats.Rent);
+  document.getElementById('mTravel').textContent=money(y.cats.Travel);
+  document.getElementById('mInvestment').textContent=money(y.cats.Investment);
+  document.getElementById('mCar').textContent=money(y.cats["Car Repair"]);
+  document.getElementById('monthlyLeft').textContent=money(y.income-y.total);
+
+  const all=[...data.transactions].sort((a,b)=>b.id-a.id);
+  document.getElementById('allTransactions').innerHTML=all.length?all.map(txHTML).join(''):'<div class="empty">No transactions yet.</div>';
+}
+function txHTML(t){
+  const icons={Daily:'🟢',Rent:'🏠',Travel:'✈️',Investment:'📈',"Car Repair":'🚗'};
+  return `<div class="transaction">
+    <div class="txleft"><div class="txdesc">${icons[t.category]||'💸'} ${escapeHTML(t.description)}</div>
+    <div class="txmeta">${t.date} • ${t.category}</div></div>
+    <div><div class="txamt">${money(t.amount)}</div><button class="delete" onclick="deleteTx(${t.id})">Delete</button></div>
+  </div>`;
+}
+function deleteTx(id){
+  if(!confirm("Delete this transaction?"))return;
+  data.transactions=data.transactions.filter(t=>t.id!==id);save();render();
+}
+function escapeHTML(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+document.getElementById('month').addEventListener('change',render);
+init();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
+}
+</script>
+</body>
+
+</html>
